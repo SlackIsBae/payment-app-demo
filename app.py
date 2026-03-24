@@ -52,6 +52,9 @@ def process_payment():
         except (TypeError, ValueError):
             return jsonify({'success': False, 'error': 'Invalid amount value.'}), 400
 
+        if not math.isfinite(amount):
+            return jsonify({'success': False, 'error': 'Invalid amount value.'}), 400
+
         if amount <= 0:
             return jsonify({'success': False, 'error': 'Amount must be greater than zero.'}), 400
         
