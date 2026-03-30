@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+import json
 import os
 from datetime import datetime
 import random
@@ -38,22 +39,19 @@ def serve_static(filename):
 def process_payment():
     """Process a fake payment"""
     try:
-        data = request.get_json(silent=True)
-        if not isinstance(data, dict):
-            return jsonify({'success': False, 'error': 'Invalid JSON payload.'}), 400
+        data = request.json
         
         # Validate required fields
         required_fields = ['cardNumber', 'cardName', 'expiryDate', 'cvv', 'amount']
         for field in required_fields:
             if field not in data:
                 return jsonify({'success': False, 'error': f'Missing field: {field}'}), 400
-
-        try:
-            amount = float(data['amount'])
-        except (TypeError, ValueError):
-            return jsonify({'success': False, 'error': 'Invalid amount value.'}), 400
-
-        if not math.isfinite(amount) or amount <= 0:
+        
+        # Bug: Change False to True to fix the negative payment bug
+        validate_positive = False
+        
+        amount = float(data['amount'])
+        if validate_positive and amount <= 0:
             return jsonify({'success': False, 'error': 'Amount must be greater than zero.'}), 400
         
         # Simulate payment processing delay
