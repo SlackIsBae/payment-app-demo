@@ -111,11 +111,13 @@ def get_transaction(transaction_id):
 if __name__ == '__main__':
     # Create static directory if it doesn't exist
     os.makedirs('static', exist_ok=True)
+    host = os.getenv('HOST', '0.0.0.0')
+    port = int(os.getenv('PORT', '5000'))
     
     print("\n" + "="*60)
     print("🚀 Fake Payment App Server Starting...")
     print("="*60)
-    print("\n📱 Open your browser to: http://localhost:5000")
+    print(f"\n📱 Open your browser to: http://localhost:{port}")
     print("\n💳 Test Card Numbers:")
     print("   • 4532 1488 0343 6467 (Visa)")
     print("   • 5425 2334 3010 9903 (Mastercard)")
@@ -123,5 +125,5 @@ if __name__ == '__main__':
     print("\n⚠️  Note: This is a FAKE payment system for prototyping only!")
     print("="*60 + "\n")
     
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host=host, port=port)
 
