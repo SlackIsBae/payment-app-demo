@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import json
 import os
 from datetime import datetime
 import random
@@ -47,11 +46,12 @@ def process_payment():
             if field not in data:
                 return jsonify({'success': False, 'error': f'Missing field: {field}'}), 400
         
-        # Reject non-positive amounts to avoid invalid payments.
-        validate_positive = True
-        
-        amount = float(data['amount'])
-        if validate_positive and amount <= 0:
+        try:
+            amount = float(data['amount'])
+        except (TypeError, ValueError):
+            return jsonify({'success': False, 'error': 'Amount must be a valid number.'}), 400
+
+        if not math.isfinite(amount) or amount <= 0:
             return jsonify({'success': False, 'error': 'Amount must be greater than zero.'}), 400
         
         # Simulate payment processing delay
