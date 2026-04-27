@@ -79,6 +79,52 @@ class TestPaymentAPI:
         # Check that error message mentions amount validation
         error_msg = data['error'].lower()
         assert 'amount' in error_msg or 'negative' in error_msg or 'invalid' in error_msg or 'greater' in error_msg
+        assert len(payments) == 0
+    
+    @pytest.mark.parametrize('amount', [0, '0', '-250.00'])
+    def test_non_positive_amount_rejected(self, client, amount):
+        """Test that zero and negative amounts are rejected"""
+        payment_data = {
+            'cardNumber': '4532148803436467',
+            'cardName': 'TEST USER',
+            'expiryDate': '12/25',
+            'cvv': '123',
+            'amount': amount,
+            'currency': 'USD'
+        }
+        
+        response = client.post('/api/payment',
+                              data=json.dumps(payment_data),
+                              content_type='application/json')
+        
+        data = json.loads(response.data)
+        
+        assert response.status_code == 400
+        assert data['success'] is False
+        assert data['error'] == 'Amount must be greater than zero.'
+        assert len(payments) == 0
+
+    def test_malformed_amount_rejected(self, client):
+        """Test that malformed amounts are rejected without storing a payment"""
+        payment_data = {
+            'cardNumber': '4532148803436467',
+            'cardName': 'TEST USER',
+            'expiryDate': '12/25',
+            'cvv': '123',
+            'amount': 'not-a-number',
+            'currency': 'USD'
+        }
+        
+        response = client.post('/api/payment',
+                              data=json.dumps(payment_data),
+                              content_type='application/json')
+        
+        data = json.loads(response.data)
+        
+        assert response.status_code == 400
+        assert data['success'] is False
+        assert data['error'] == 'Amount must be a valid number.'
+        assert len(payments) == 0
     
     def test_missing_fields(self, client):
         """Test that missing required fields return error"""
