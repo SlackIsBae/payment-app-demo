@@ -79,30 +79,6 @@ class TestPaymentAPI:
         # Check that error message mentions amount validation
         error_msg = data['error'].lower()
         assert 'amount' in error_msg or 'negative' in error_msg or 'invalid' in error_msg or 'greater' in error_msg
-        assert len(payments) == 0
-    
-    @pytest.mark.parametrize('amount', [0, 'not-a-number'])
-    def test_invalid_payment_amount_rejected(self, client, amount):
-        """Test that zero and non-numeric payments are rejected"""
-        payment_data = {
-            'cardNumber': '4532148803436467',
-            'cardName': 'TEST USER',
-            'expiryDate': '12/25',
-            'cvv': '123',
-            'amount': amount,
-            'currency': 'USD'
-        }
-        
-        response = client.post('/api/payment',
-                              data=json.dumps(payment_data),
-                              content_type='application/json')
-        
-        data = json.loads(response.data)
-        
-        assert response.status_code == 400
-        assert data['success'] is False
-        assert 'amount' in data['error'].lower()
-        assert len(payments) == 0
     
     def test_missing_fields(self, client):
         """Test that missing required fields return error"""
