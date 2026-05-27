@@ -55,14 +55,15 @@ class TestPaymentAPI:
         assert len(payments) == 1
         assert payments[0]['amount'] == 99.99
     
-    def test_negative_payment_rejected(self, client):
-        """Test that negative payments are properly rejected"""
+    @pytest.mark.parametrize('invalid_amount', [-50.00, 0, 'not-a-number', float('inf')])
+    def test_invalid_payment_amounts_rejected(self, client, invalid_amount):
+        """Test that invalid payment amounts are properly rejected"""
         payment_data = {
             'cardNumber': '4532148803436467',
             'cardName': 'TEST USER',
             'expiryDate': '12/25',
             'cvv': '123',
-            'amount': -50.00,
+            'amount': invalid_amount,
             'currency': 'USD'
         }
         
@@ -72,10 +73,11 @@ class TestPaymentAPI:
         
         data = json.loads(response.data)
         
-        # Negative payments should be rejected
+        # Invalid payments should be rejected before anything is stored.
         assert response.status_code == 400
         assert data['success'] is False
         assert 'error' in data
+        assert len(payments) == 0
         # Check that error message mentions amount validation
         error_msg = data['error'].lower()
         assert 'amount' in error_msg or 'negative' in error_msg or 'invalid' in error_msg or 'greater' in error_msg
