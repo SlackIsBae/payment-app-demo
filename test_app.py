@@ -213,3 +213,68 @@ class TestPaymentAPI:
         assert payments[0]['card_last_four'] == '6467'
         assert 'cardNumber' not in payments[0]  # Full card number not stored
 
+
+class TestAmountValidation:
+    """Edge cases for amount and request body validation"""
+
+    VALID = {
+        'cardNumber': '4532148803436467',
+        'cardName': 'TEST USER',
+        'expiryDate': '12/25',
+        'cvv': '123',
+        'currency': 'USD'
+    }
+
+    def _post(self, client, **overrides):
+        payload = dict(self.VALID)
+        payload.update(overrides)
+        return client.post('/api/payment',
+                           data=json.dumps(payload),
+                           content_type='application/json')
+
+    @pytest.mark.parametrize('amount', [0, 0.0, -0.01, -50, '0', '-5'])
+    def test_non_positive_amount_rejected(self, client, amount):
+        response = self._post(client, amount=amount)
+        data = json.loads(response.data)
+
+        assert response.status_code == 400
+        assert data['success'] is False
+        assert 'greater than zero' in data['error'].lower()
+        assert len(payments) == 0
+
+    @pytest.mark.parametrize('amount', ['abc', '', None, [], {}, True])
+    def test_non_numeric_amount_rejected(self, client, amount):
+        response = self._post(client, amount=amount)
+        data = json.loads(response.data)
+
+        assert response.status_code == 400
+        assert data['success'] is False
+        assert 'amount' in data['error'].lower()
+        assert len(payments) == 0
+
+    @pytest.mark.parametrize('amount', ['NaN', 'Infinity', '-Infinity'])
+    def test_non_finite_amount_rejected(self, client, amount):
+        response = self._post(client, amount=amount)
+
+        assert response.status_code == 400
+        assert json.loads(response.data)['success'] is False
+        assert len(payments) == 0
+
+    def test_empty_body_rejected(self, client):
+        response = client.post('/api/payment', data='', content_type='application/json')
+
+        assert response.status_code == 400
+        assert json.loads(response.data)['success'] is False
+
+    @pytest.mark.parametrize('body', ['null', '[]', '"text"', '{not json'])
+    def test_non_object_body_rejected(self, client, body):
+        response = client.post('/api/payment', data=body, content_type='application/json')
+
+        assert response.status_code == 400
+        assert json.loads(response.data)['success'] is False
+
+    def test_numeric_string_amount_accepted(self, client):
+        response = self._post(client, amount='12.50')
+
+        assert response.status_code == 200
+        assert json.loads(response.data)['amount'] == 12.5
